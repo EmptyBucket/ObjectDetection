@@ -3,22 +3,17 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
-using ObjectDetection.Models;
 
-namespace ObjectDetection.Utilities
+namespace ObjectDetection.Models
 {
-    public static class CatalogUtil
+    public class ClassCatalogParser
     {
-        private static readonly string CATALOG_ITEM_PATTERN =
+        private const string CatalogItemPattern =
             @"item {{{0}  name: ""(?<name>.*)""{0}  id: (?<id>\d+){0}  display_name: ""(?<displayName>.*)""{0}}}";
-        private static readonly string CATALOG_ITEM_PATTERN_ENV =
-            string.Format(CultureInfo.InvariantCulture, CATALOG_ITEM_PATTERN, Environment.NewLine);
-        private static readonly string CATALOG_ITEM_PATTERN_UNIX =
-            string.Format(CultureInfo.InvariantCulture, CATALOG_ITEM_PATTERN, "\n");
 
-        public static IEnumerable<CatalogItem> ReadCatalogItems(string file)
+        public IEnumerable<ClassCatalogItem> Parse(string classCatalogPath)
         {
-            using (var stream = File.OpenRead(file))
+            using (var stream = File.OpenRead(classCatalogPath))
             using (var reader = new StreamReader(stream))
             {
                 var text = reader.ReadToEnd();
@@ -28,18 +23,19 @@ namespace ObjectDetection.Utilities
                     yield break;
                 }
 
-                var regex = new Regex(CATALOG_ITEM_PATTERN_ENV);
+                var regex = new Regex(string.Format(CultureInfo.InvariantCulture, CatalogItemPattern,
+                    Environment.NewLine));
                 var matches = regex.Matches(text);
 
                 if (matches.Count == 0)
                 {
-                    regex = new Regex(CATALOG_ITEM_PATTERN_UNIX);
+                    regex = new Regex(string.Format(CultureInfo.InvariantCulture, CatalogItemPattern, "\n"));
                     matches = regex.Matches(text);
                 }
 
                 foreach (Match match in matches)
                 {
-                    yield return new CatalogItem
+                    yield return new ClassCatalogItem
                     {
                         Id = int.Parse(match.Groups[2].Value),
                         Name = match.Groups[1].Value,

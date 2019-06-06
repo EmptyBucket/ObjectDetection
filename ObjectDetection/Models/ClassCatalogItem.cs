@@ -1,6 +1,6 @@
 namespace ObjectDetection.Models
 {
-    public class CatalogItem
+    public class ClassCatalogItem
     {
         public int Id { get; set; }
 
