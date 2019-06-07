@@ -69,7 +69,7 @@ namespace ObjectDetection
 
                     var personCount = Enumerable
                         .Range(0, scores.GetLength(1))
-                        .Count(i => scores[0, i] >= 0.5 && Convert.ToInt32(classes[0, i]) == personClass.Id);
+                        .Count(i => scores[0, i] >= 0.3 && Convert.ToInt32(classes[0, i]) == personClass.Id);
 
                     c.Response.ContentType = "application/json";
 
