@@ -1,16 +1,17 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using TensorFlow;
 
 namespace ObjectDetection.Utilities
 {
     public static class TensorUtil
     {
-        public static TFTensor CreateFromImageFile(string file, TFDataType destinationDataType = TFDataType.Float)
+        public static TFTensor CreateFromImageFile(Stream stream, TFDataType destinationDataType = TFDataType.Float)
         {
             unsafe
             {
-                var bitmap = new Bitmap(file);
+                var bitmap = new Bitmap(stream);
 
                 var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly,
                     PixelFormat.Format24bppRgb);

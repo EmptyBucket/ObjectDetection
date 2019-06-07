@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -43,36 +44,42 @@ namespace ObjectDetection
             
             app.Run(c =>
             {
-                 using (var session = new TFSession(graph))
-                 {
-                     var tensor = TensorUtil.CreateFromImageFile(
-                         Path.Combine(configSettings.ContentRootPath, "input.jpg"), TFDataType.UInt8);
-                     var output = session
-                         .GetRunner()
-                         .AddInput(graph["image_tensor"][0], tensor)
-                         .Fetch(
-                             graph["detection_boxes"][0],
-                             graph["detection_scores"][0],
-                             graph["detection_classes"][0],
-                             graph["num_detections"][0])
-                         .Run();
-            
-                     var boxes = ((float[,,])output[0].GetValue());
-                     var scores = (float[,])output[1].GetValue();
-                     var classes = (float[,])output[2].GetValue();
-                     var num = (float[])output[3].GetValue();
-                     
-                     classes.GetValue()
+                if (c.Request.Method != "POST")
+                {
+                    c.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                }
+                
+                using (var session = new TFSession(graph))
+                {
+                    var tensor = TensorUtil.CreateFromImageFile(c.Request.Body, TFDataType.UInt8);
+                    var output = session
+                        .GetRunner()
+                        .AddInput(graph["image_tensor"][0], tensor)
+                        .Fetch(
+                            graph["detection_boxes"][0],
+                            graph["detection_scores"][0],
+                            graph["detection_classes"][0],
+                            graph["num_detections"][0])
+                        .Run();
+                    var boxes = (float[,,])output[0].GetValue();
+                    var scores = (float[,])output[1].GetValue();
+                    var classes = (float[,])output[2].GetValue();
+                    var num = (float[])output[3].GetValue();
 
-                     using (var streamWriter = new StreamWriter(c.Response.Body))
-                     {
-                         streamWriter.WriteLine($"{{\"result\": \"{num.FirstOrDefault()}\"}}");
-                     }
+                    var personCount = Enumerable
+                        .Range(0, scores.GetLength(1))
+                        .Count(i => scores[0, i] >= 0.5 && Convert.ToInt32(classes[0, i]) == personClass.Id);
 
-                     c.Response.ContentType = "application/json";
-                 }
+                    c.Response.ContentType = "application/json";
 
-                 return Task.CompletedTask;
+                    using (var streamWriter = new StreamWriter(c.Response.Body))
+                    {
+                        streamWriter.WriteLine($"{{\"result\": {personCount}}}");
+                    }
+                }
+
+                return Task.CompletedTask;
             });
         }
     }
